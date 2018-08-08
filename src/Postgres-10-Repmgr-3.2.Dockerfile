@@ -7,7 +7,7 @@
 FROM postgres:10
 
 RUN apt-get update --fix-missing && \
-    apt-get install -y postgresql-server-dev-$PG_MAJOR wget openssh-server barman-cli
+    apt-get install -y postgresql-server-dev-$PG_MAJOR wget openssh-server barman-cli curl
 
 
 RUN TEMP_DEB="$(mktemp)" && \

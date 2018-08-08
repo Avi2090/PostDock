@@ -1,0 +1,25 @@
+#!/bin/bash
+
+### update pod label for master : role: primary
+### update pod label for slave : role: standby
+
+echo ">>>> Updating label for standby pod."
+
+patch='[
+ {
+ "op": "add", "path": "/metadata/labels/role", "value": "standby"
+ }
+]'
+
+KUBE_TOKEN=$(</var/run/secrets/kubernetes.io/serviceaccount/token)
+
+curl -k --header "Authorization: Bearer $KUBE_TOKEN" --request PATCH --data "$(echo "$patch")" \
+  -H "Content-Type:application/json-patch+json" \
+  https://kubernetes.default.svc:443/api/v1/namespaces/${MY_POD_NAMESPACE}/pods/${MY_POD_NAME}
+
+if [ $? -ne 0 ];then
+  echo ">>>>Failed to apply standby label."
+  exit 1
+fi
+
+echo ">>>> Updating label for standby pod."

@@ -8,6 +8,8 @@ echo ">>> My name is $MY_NAME"
 AM_I_MASTER=`PGPASSWORD=$REPLICATION_PASSWORD psql -h $CLUSTER_NODE_NETWORK_NAME -U $REPLICATION_USER -p $REPLICATION_PRIMARY_PORT $REPLICATION_DB  -tAc "SELECT * FROM $(get_repmgr_schema).$REPMGR_NODES_TABLE WHERE $REPMGR_NODE_NAME_COLUMN='$MY_NAME' AND (type='primary' OR type='master')" | wc -l`
 if [[ "$AM_I_MASTER" -eq "0" ]]; then
     echo ">>> I'm not master at all! No worries!"
+    ## If standby, update standby label
+    update_standby_label
     exit 0
 else
     echo ">>> I think I'm master. Will ask my neighbors if they agree."
@@ -27,6 +29,7 @@ else
     DIFFERENT_UPSTREAMS=`PGPASSWORD=$REPLICATION_PASSWORD psql -h $CLUSTER_NODE_NETWORK_NAME -U $REPLICATION_USER -p $REPLICATION_PRIMARY_PORT $REPLICATION_DB  -tAc "SELECT upstream_node_id FROM $(get_repmgr_schema).$REPMGR_NODES_TABLE" | uniq | awk '{$1=$1};1' | grep -v -e '^[[:space:]]*$' | wc -l`
     if [[ "$DIFFERENT_UPSTREAMS" -gt "1" ]]; then
         echo ">>> I can't work with cascade replication without PARTNER_NODES list! Will not run check!"
+        update_primary_label
         exit 0
     fi
     echo ">>> Will ask all nodes in the cluster"
@@ -94,4 +97,6 @@ do
 done
 
 echo ">>> Yahoo! I'm real master...so I think!"
+## If master update master label.
+update_primary_label
 exit 0
